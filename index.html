@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Routine">
+<meta name="theme-color" content="#0a0a0a">
+<title>Routine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #b8f5a0;
+    --green-dark: #1a3a12;
+    --surface: #141414;
+    --surface2: #1e1e1e;
+    --surface3: #282828;
+    --text: #f0ede8;
+    --text-muted: #888;
+    --text-faint: #444;
+    --accent: #b8f5a0;
+    --danger: #ff6b6b;
+    --amber: #ffc96b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: #0a0a0a; }
+  body { font-family: 'DM Sans', sans-serif; color: var(--text); overflow-x: hidden; }
+
+  .app { max-width: 430px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; background: #0a0a0a; }
+
+  /* Header */
+  .header { padding: 52px 24px 24px; }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .greeting { font-family: 'Instrument Serif', serif; font-size: 36px; color: var(--text); line-height: 1.1; }
+  .greeting em { font-style: italic; color: var(--green); }
+  .date-label { font-size: 13px; color: var(--text-muted); margin-top: 4px; font-weight: 300; }
+  .streak-pill { background: var(--surface2); border: 0.5px solid var(--surface3); border-radius: 20px; padding: 6px 14px; font-size: 13px; color: var(--amber); font-weight: 500; white-space: nowrap; margin-top: 4px; }
+
+  /* Progress ring */
+  .progress-section { padding: 0 24px 24px; display: flex; align-items: center; gap: 20px; }
+  .ring-wrap { position: relative; width: 72px; height: 72px; flex-shrink: 0; }
+  .ring-wrap svg { transform: rotate(-90deg); }
+  .ring-bg { fill: none; stroke: var(--surface3); stroke-width: 5; }
+  .ring-fill { fill: none; stroke: var(--green); stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset 0.6s cubic-bezier(.4,0,.2,1); }
+  .ring-pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 500; color: var(--text); }
+  .progress-info { flex: 1; }
+  .progress-main { font-size: 18px; font-weight: 500; color: var(--text); }
+  .progress-sub { font-size: 13px; color: var(--text-muted); margin-top: 3px; font-weight: 300; }
+
+  /* Section */
+  .section { padding: 0 24px; margin-bottom: 8px; }
+  .section-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint); font-weight: 500; margin-bottom: 12px; }
+
+  /* Habit card */
+  .habit-card {
+    background: var(--surface);
+    border: 0.5px solid var(--surface3);
+    border-radius: 16px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    user-select: none;
+  }
+  .habit-card:active { background: var(--surface2); }
+  .habit-card.done { border-color: rgba(184,245,160,0.2); background: rgba(184,245,160,0.04); }
+  .check {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1.5px solid var(--surface3);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .habit-card.done .check { background: var(--green); border-color: var(--green); }
+  .check svg { opacity: 0; transition: opacity 0.15s; width: 14px; height: 14px; }
+  .habit-card.done .check svg { opacity: 1; }
+  .habit-body { flex: 1; min-width: 0; }
+  .habit-name { font-size: 15px; font-weight: 400; color: var(--text); transition: color 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .habit-card.done .habit-name { color: var(--text-faint); text-decoration: line-through; }
+  .habit-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; font-weight: 300; }
+  .habit-streak-label { font-size: 12px; color: var(--amber); font-weight: 400; flex-shrink: 0; }
+  .habit-del { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--text-faint); font-size: 18px; line-height: 1; flex-shrink: 0; transition: color 0.15s; }
+  .habit-del:hover { color: var(--danger); }
+
+  /* AI card */
+  .ai-card {
+    margin: 8px 24px 16px;
+    background: var(--surface);
+    border: 0.5px solid rgba(184,245,160,0.15);
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .ai-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(184,245,160,0.5); font-weight: 500; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .ai-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .ai-text { font-size: 14px; color: var(--text-muted); line-height: 1.6; font-weight: 300; }
+  .ai-text strong { color: var(--text); font-weight: 500; }
+
+  /* Add habit */
+  .add-section { padding: 0 24px 16px; }
+  .add-row { display: flex; gap: 10px; }
+  .add-input {
+    flex: 1;
+    background: var(--surface);
+    border: 0.5px solid var(--surface3);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .add-input::placeholder { color: var(--text-faint); }
+  .add-input:focus { border-color: rgba(184,245,160,0.3); }
+  .add-time {
+    width: 110px;
+    background: var(--surface);
+    border: 0.5px solid var(--surface3);
+    border-radius: 12px;
+    padding: 12px 12px;
+    font-size: 14px;
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+  }
+  .add-btn {
+    width: 44px; height: 44px;
+    background: var(--green);
+    border: none;
+    border-radius: 12px;
+    font-size: 22px;
+    color: var(--green-dark);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-weight: 500;
+    transition: opacity 0.15s;
+  }
+  .add-btn:active { opacity: 0.8; }
+
+  /* Notify banner */
+  .notify-banner {
+    margin: 0 24px 16px;
+    background: rgba(255,201,107,0.08);
+    border: 0.5px solid rgba(255,201,107,0.2);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: var(--amber);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+  .notify-banner.hidden { display: none; }
+  .notify-banner span { flex: 1; line-height: 1.4; }
+
+  /* Bottom nav */
+  .nav { display: flex; padding: 12px 24px 28px; border-top: 0.5px solid var(--surface3); background: #0a0a0a; margin-top: auto; }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 11px; color: var(--text-faint); cursor: pointer; transition: color 0.15s; }
+  .nav-item.active { color: var(--green); }
+  .nav-icon { width: 22px; height: 22px; }
+
+  /* Completed state */
+  .all-done-msg { text-align: center; padding: 24px; font-family: 'Instrument Serif', serif; font-size: 22px; color: var(--green); font-style: italic; display: none; }
+
+  /* Fade in */
+  @keyframes fadeUp { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: translateY(0); } }
+  .habit-card { animation: fadeUp 0.3s ease both; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="greeting" id="greeting">Buon<em>giorno</em></div>
+        <div class="date-label" id="date-label"></div>
+      </div>
+      <div class="streak-pill" id="streak-pill">🔥 5 giorni</div>
+    </div>
+  </div>
+
+  <div class="progress-section">
+    <div class="ring-wrap">
+      <svg width="72" height="72" viewBox="0 0 72 72">
+        <circle class="ring-bg" cx="36" cy="36" r="30"/>
+        <circle class="ring-fill" id="ring" cx="36" cy="36" r="30" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+      </svg>
+      <div class="ring-pct" id="ring-pct">0%</div>
+    </div>
+    <div class="progress-info">
+      <div class="progress-main" id="prog-main">Inizia la tua giornata</div>
+      <div class="progress-sub" id="prog-sub">0 di 0 abitudini completate</div>
+    </div>
+  </div>
+
+  <div class="notify-banner" id="notify-banner" onclick="requestNotify()">
+    <span>Attiva i promemoria per ricevere notifiche intelligenti</span>
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Routine di oggi</div>
+    <div id="habit-list"></div>
+    <div class="all-done-msg" id="all-done">Routine completata oggi!</div>
+  </div>
+
+  <div class="ai-card">
+    <div class="ai-label"><div class="ai-dot"></div>AI · motivazione</div>
+    <div class="ai-text" id="ai-text">Aggiungi le tue abitudini e inizia a tracciare la tua routine. <strong>Ogni piccolo passo conta.</strong></div>
+  </div>
+
+  <div class="add-section">
+    <div class="section-label">Aggiungi abitudine</div>
+    <div class="add-row">
+      <input class="add-input" id="new-name" placeholder="Es. Meditazione..." />
+      <input class="add-time" id="new-time" type="time" value="08:00" />
+      <button class="add-btn" onclick="addHabit()">+</button>
+    </div>
+  </div>
+
+  <div class="nav">
+    <div class="nav-item active">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Oggi
+    </div>
+    <div class="nav-item" onclick="showStats()">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Stats
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      Profilo
+    </div>
+  </div>
+
+</div>
+
+<script>
+const STORAGE_KEY = 'routine_habits_v2';
+const TODAY_KEY = 'routine_today_' + new Date().toDateString();
+const STREAK_KEY = 'routine_streak';
+
+let habits = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+let doneToday = JSON.parse(localStorage.getItem(TODAY_KEY) || '[]');
+let streak = parseInt(localStorage.getItem(STREAK_KEY) || '5');
+
+if (habits.length === 0) {
+  habits = [
+    { id: 1, name: 'Meditazione mattutina', time: '07:00', streakDays: 14 },
+    { id: 2, name: 'Palestra', time: '08:30', streakDays: 7 },
+    { id: 3, name: 'Lettura sera', time: '21:00', streakDays: 21 },
+    { id: 4, name: 'Bere 2L d\'acqua', time: 'tutto il giorno', streakDays: 3 },
+  ];
+  save();
+}
+
+const aiMessages = [
+  msg => `Dai, il primo passo è sempre il più duro. <strong>Ce la fai!</strong>`,
+  msg => `Ottimo inizio! Hai completato <strong>${msg} abitudine</strong>. Continua!`,
+  msg => `Stai andando alla grande — <strong>${msg} abitudini</strong> spuntate. Quasi a metà!`,
+  msg => `Più della metà completata! Lo slancio è tutto. <strong>Non fermarti ora.</strong>`,
+  msg => `Quasi al traguardo! <strong>Un'ultima abitudine</strong> e la giornata è tua.`,
+  msg => `<strong>Giornata perfetta!</strong> Hai completato tutta la routine. Sei a ${streak} giorni di fila — continua così!`
+];
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(habits));
+  localStorage.setItem(TODAY_KEY, JSON.stringify(doneToday));
+}
+
+function render() {
+  const list = document.getElementById('habit-list');
+  list.innerHTML = '';
+  habits.forEach((h, i) => {
+    const done = doneToday.includes(h.id);
+    const card = document.createElement('div');
+    card.className = 'habit-card' + (done ? ' done' : '');
+    card.style.animationDelay = (i * 0.05) + 's';
+    card.innerHTML = `
+      <div class="check">
+        <svg fill="none" stroke="#1a3a12" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 14 14"><polyline points="2,7 5.5,10.5 12,3"/></svg>
+      </div>
+      <div class="habit-body">
+        <div class="habit-name">${h.name}</div>
+        <div class="habit-meta">${h.time}</div>
+      </div>
+      <div class="habit-streak-label">${h.streakDays}g</div>
+      <div class="habit-del" onclick="delHabit(event,${h.id})">×</div>
+    `;
+    card.addEventListener('click', () => toggleHabit(h.id));
+    list.appendChild(card);
+  });
+  updateProgress();
+}
+
+function toggleHabit(id) {
+  const idx = doneToday.indexOf(id);
+  if (idx === -1) doneToday.push(id);
+  else doneToday.splice(idx, 1);
+  save();
+  render();
+}
+
+function delHabit(e, id) {
+  e.stopPropagation();
+  habits = habits.filter(h => h.id !== id);
+  doneToday = doneToday.filter(d => d !== id);
+  save();
+  render();
+}
+
+function addHabit() {
+  const name = document.getElementById('new-name').value.trim();
+  if (!name) return;
+  const time = document.getElementById('new-time').value || 'tutto il giorno';
+  const id = Date.now();
+  habits.push({ id, name, time, streakDays: 0 });
+  save();
+  render();
+  document.getElementById('new-name').value = '';
+}
+
+function updateProgress() {
+  const total = habits.length;
+  const done = doneToday.filter(id => habits.find(h => h.id === id)).length;
+  const pct = total > 0 ? Math.round(done / total * 100) : 0;
+  const circ = 2 * Math.PI * 30;
+  document.getElementById('ring').style.strokeDashoffset = circ - (circ * pct / 100);
+  document.getElementById('ring-pct').textContent = pct + '%';
+  const msgs = ['Inizia la tua giornata', 'Ottimo inizio!', 'Stai andando bene!', 'Più della metà!', 'Quasi finito!', 'Giornata perfetta!'];
+  const msgIdx = total === 0 ? 0 : Math.min(Math.floor(done / total * 5), done === total && total > 0 ? 5 : 4);
+  document.getElementById('prog-main').textContent = msgs[msgIdx];
+  document.getElementById('prog-sub').textContent = done + ' di ' + total + ' abitudini completate';
+  document.getElementById('all-done').style.display = (done === total && total > 0) ? 'block' : 'none';
+  const aiIdx = total === 0 ? 0 : Math.min(done, aiMessages.length - 1);
+  document.getElementById('ai-text').innerHTML = aiMessages[aiIdx](done);
+  document.getElementById('streak-pill').textContent = '🔥 ' + streak + ' giorni';
+}
+
+function requestNotify() {
+  if ('Notification' in window) {
+    Notification.requestPermission().then(p => {
+      if (p === 'granted') {
+        document.getElementById('notify-banner').classList.add('hidden');
+        scheduleNotifications();
+      }
+    });
+  }
+}
+
+function scheduleNotifications() {
+  if (!('serviceWorker' in navigator)) return;
+  habits.forEach(h => {
+    if (h.time && h.time.includes(':')) {
+      const [hh, mm] = h.time.split(':').map(Number);
+      const now = new Date();
+      const notifTime = new Date();
+      notifTime.setHours(hh, mm, 0);
+      const delay = notifTime - now;
+      if (delay > 0) {
+        setTimeout(() => {
+          new Notification('Routine', { body: 'È ora di: ' + h.name, icon: '/icon.png' });
+        }, delay);
+      }
+    }
+  });
+}
+
+function showStats() {
+  alert('Stats: ' + doneToday.length + ' abitudini completate oggi su ' + habits.length + ' totali.\nStreak attuale: ' + streak + ' giorni consecutivi!');
+}
+
+const days = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+const months = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+const now = new Date();
+const h = now.getHours();
+const greetEl = document.getElementById('greeting');
+if (h < 12) greetEl.innerHTML = 'Buon<em>giorno</em>';
+else if (h < 18) greetEl.innerHTML = 'Buon<em>pomeriggio</em>';
+else greetEl.innerHTML = 'Buona<em>sera</em>';
+document.getElementById('date-label').textContent = days[now.getDay()] + ', ' + now.getDate() + ' ' + months[now.getMonth()];
+
+if (Notification.permission === 'granted') {
+  document.getElementById('notify-banner').classList.add('hidden');
+}
+
+render();
+</script>
+</body>
+</html>
